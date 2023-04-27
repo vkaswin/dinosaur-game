@@ -9,7 +9,7 @@ const Dino = (() => {
   let container: HTMLDivElement;
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
-  let intervalId: NodeJS.Timer;
+  let intervalId: NodeJS.Timer | null;
   let sprite = new Image();
   let isStarted: boolean;
   let jump: boolean;
