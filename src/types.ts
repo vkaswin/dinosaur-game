@@ -27,9 +27,25 @@ export interface Horizon {
 export interface Obstacle {
   count: number;
   speed: number;
-  y: number;
+  height: {
+    small: number;
+    large: number;
+  };
+  y: {
+    small: number;
+    large: number;
+  };
   interval: number[];
-  list: ({ x: number; width: number; sx: number; interval: number } | null)[];
+  cactuses: ({
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+    sx: number;
+    size: ObstacleSize;
+  } | null)[];
   small: { sx: number; width: number }[];
   large: { sx: number; width: number }[];
 }
+
+export type ObstacleSize = "small" | "large";

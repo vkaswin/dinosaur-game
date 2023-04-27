@@ -1,9 +1,9 @@
-import type { Horizon, Trex, Obstacle } from "./types";
+import type { Horizon, Trex, Obstacle, ObstacleSize } from "./types";
 
 const Dino = (() => {
   let fps = 60;
   let canvasWidth = 670;
-  let canvasHeight = 150;
+  let canvasHeight = 175;
   let spriteWidth: number;
   let spriteHeight: number;
   let container: HTMLDivElement;
@@ -14,6 +14,7 @@ const Dino = (() => {
   let isStarted: boolean;
   let jump: boolean;
   let isKeyUp: boolean;
+
   let trex = ((): Trex => {
     let size = 50;
     return {
@@ -32,6 +33,7 @@ const Dino = (() => {
       minY: 50,
     };
   })();
+
   let horizon: Horizon = {
     width: canvasWidth,
     height: canvasHeight,
@@ -39,14 +41,22 @@ const Dino = (() => {
     y: canvasHeight - 20,
     sx: 0,
     sy: 100,
-    speed: 5,
+    speed: 6,
   };
+
   let obstacle: Obstacle = {
-    list: [],
-    speed: 5,
-    count: 4,
-    y: 80,
-    interval: [175, 450, 650],
+    cactuses: [],
+    speed: 6,
+    count: 3,
+    height: {
+      small: 75,
+      large: 85,
+    },
+    y: {
+      small: 125,
+      large: 95,
+    },
+    interval: [250, 275, 300, 325, 350],
     small: [
       {
         sx: 440,
@@ -73,7 +83,32 @@ const Dino = (() => {
         width: 38,
       },
     ],
-    large: [],
+    large: [
+      {
+        sx: 648,
+        width: 56,
+      },
+      {
+        sx: 704,
+        width: 50,
+      },
+      {
+        sx: 754,
+        width: 50,
+      },
+      {
+        sx: 804,
+        width: 48,
+      },
+      {
+        sx: 852,
+        width: 52,
+      },
+      {
+        sx: 906,
+        width: 48,
+      },
+    ],
   };
 
   let getStaticPath = (path: string): string => {
@@ -84,16 +119,17 @@ const Dino = (() => {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   };
 
-  let update = () => {
+  let renderCanvas = () => {
     clearCanvas();
     horizon.sx = horizon.sx >= spriteWidth ? 0 : horizon.sx + horizon.speed;
     drawHorizon();
     drawTrex();
     drawObstacle();
+    checkCollision();
   };
 
   let start = () => {
-    intervalId = setInterval(update, 1000 / fps);
+    intervalId = setInterval(renderCanvas, 1000 / fps);
   };
 
   let stop = () => {
@@ -132,61 +168,95 @@ const Dino = (() => {
     }
   };
 
+  let generateRandomInterval = (): number => {
+    let interval =
+      obstacle.interval[Math.floor(Math.random() * obstacle.interval.length)];
+
+    return interval;
+  };
+
   let drawObstacle = () => {
     for (let i = 0; i < obstacle.count; i++) {
-      let obstacles = obstacle.small;
+      let cactus = obstacle.cactuses[i];
 
-      let randomObstacle =
-        obstacles[Math.floor(Math.random() * obstacles.length)];
-
-      let item = obstacle.list[i];
-
-      if (item) {
-        if (item.x === -item.width) {
-          item = null;
+      if (cactus) {
+        if (cactus.x === -cactus.width) {
+          cactus = null;
         } else {
-          item.x = Math.max(item.x - obstacle.speed, -item.width);
+          cactus.x = Math.max(cactus.x - obstacle.speed, -cactus.width);
         }
       } else {
-        let prevItem =
-          obstacle.list[i === 0 ? obstacle.list.length - 1 : i - 1];
+        let prevObstacle =
+          obstacle.cactuses[i === 0 ? obstacle.cactuses.length - 1 : i - 1];
 
-        let randomNum = (): number => {
-          let num =
-            obstacle.interval[
-              Math.floor(Math.random() * obstacle.interval.length)
-            ];
+        let interval = i === 0 && !isStarted ? 0 : generateRandomInterval();
 
-          if (prevItem && prevItem.interval === num) return randomNum();
+        let size: ObstacleSize =
+          Math.floor(Math.random() * 2 + 1) === 1 ? "small" : "large";
 
-          return num;
-        };
+        let obstacles = obstacle[size];
 
-        let interval = i !== 0 ? randomNum() : 0;
+        let randomObstacle =
+          obstacles[Math.floor(Math.random() * obstacles.length)];
 
-        item = {
-          interval,
-          x: canvasWidth + randomObstacle.width + interval,
+        let height = obstacle.height[size];
+
+        let y = obstacle.y[size];
+
+        cactus = {
+          size,
+          height,
+          y,
+          x: (prevObstacle ? prevObstacle.x : canvasWidth) + interval,
           ...randomObstacle,
         };
       }
 
-      obstacle.list[i] = item;
+      obstacle.cactuses[i] = cactus;
 
-      if (!item) continue;
+      if (!cactus) continue;
 
       ctx.drawImage(
         sprite,
-        item.sx,
+        cactus.sx,
         0,
-        item.width,
+        cactus.width,
         100,
-        item.x,
-        obstacle.y,
-        item.width,
-        100
+        cactus.x,
+        cactus.y,
+        cactus.width,
+        cactus.height
       );
     }
+  };
+
+  let checkCollision = () => {
+    let isCollision = obstacle.cactuses.some((cactus) => {
+      if (!cactus) return;
+      return cactus.x >= trex.x;
+    });
+    if (!isCollision) return;
+    drawGameOver();
+    drawRestart();
+    stop();
+  };
+
+  let drawGameOver = () => {
+    let width = 392;
+    let height = 30;
+    let x = (canvasWidth - width) / 2;
+    let y = (canvasHeight - height) / 2;
+
+    ctx.drawImage(sprite, 950, 24, width, height, x, y, width, height);
+  };
+
+  let drawRestart = () => {
+    let width = 70;
+    let height = 64;
+    let x = (canvasWidth - width) / 2;
+    let y = (canvasHeight - height) / 2 + 60;
+
+    ctx.drawImage(sprite, 0, 0, width, height, x, y, 50, 50);
   };
 
   let drawTrex = () => {
@@ -263,9 +333,7 @@ const Dino = (() => {
       spriteWidth = sprite.width;
       spriteHeight = sprite.height;
       trex.height = spriteHeight - 30;
-      drawHorizon();
-      drawTrex();
-      drawObstacle();
+      renderCanvas();
     };
 
     container.append(canvas);
