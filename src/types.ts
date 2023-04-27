@@ -27,10 +27,7 @@ export interface Horizon {
 export interface Obstacle {
   count: number;
   speed: number;
-  height: {
-    small: number;
-    large: number;
-  };
+  height: number;
   y: {
     small: number;
     large: number;
@@ -38,7 +35,6 @@ export interface Obstacle {
   interval: number[];
   cactuses: ({
     width: number;
-    height: number;
     x: number;
     y: number;
     sx: number;
@@ -49,3 +45,19 @@ export interface Obstacle {
 }
 
 export type ObstacleSize = "small" | "large";
+
+export interface Sky {
+  count: number;
+  speed: number;
+  sx: number;
+  width: number;
+  height: number;
+  y: {
+    top: number;
+    bottom: number;
+  };
+  interval: number;
+  skies: ({ x: number; y: number; position: SkyPosition } | null)[];
+}
+
+export type SkyPosition = "top" | "bottom";
