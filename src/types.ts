@@ -7,12 +7,14 @@ export interface Trex {
   sy: number;
   defaultY: number;
   size: number;
-  speed: number;
+
   minY: number;
   type: "straight" | "bend";
-  position: 0 | 1 | 2 | 3;
+  position: TrexPosition;
   move?: "up" | "down";
 }
+
+export type TrexPosition = 0 | 1 | 2 | 3;
 
 export interface Horizon {
   width: number;
@@ -21,12 +23,10 @@ export interface Horizon {
   y: number;
   sx: number;
   sy: number;
-  speed: number;
 }
 
 export interface Obstacle {
   count: number;
-  speed: number;
   height: number;
   y: {
     small: number;

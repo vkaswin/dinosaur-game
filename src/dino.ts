@@ -5,10 +5,12 @@ import type {
   ObstacleSize,
   Sky,
   SkyPosition,
+  TrexPosition,
 } from "./types";
 
 const Dino = (() => {
   let fps = 60;
+  let gameSpeed = 6;
   let canvasWidth = 670;
   let canvasHeight = 170;
   let spriteWidth: number;
@@ -32,11 +34,10 @@ const Dino = (() => {
       y: canvasHeight - size,
       sx: 0,
       sy: 0,
-      type: "straight",
       position: 0,
+      type: "straight",
       move: undefined,
       defaultY: canvasHeight - size,
-      speed: 6,
       minY: 50,
     };
   })();
@@ -62,12 +63,10 @@ const Dino = (() => {
     y: canvasHeight - 20,
     sx: 0,
     sy: 100,
-    speed: 6,
   };
 
   let obstacle: Obstacle = {
     cactuses: [],
-    speed: 6,
     count: 3,
     height: 75,
     y: {
@@ -123,7 +122,6 @@ const Dino = (() => {
 
   let renderCanvas = () => {
     clearCanvas();
-    horizon.sx = horizon.sx >= spriteWidth ? 0 : horizon.sx + horizon.speed;
     drawHorizon();
     drawSky();
     drawTrex();
@@ -136,10 +134,14 @@ const Dino = (() => {
   };
 
   let stop = () => {
-    if (intervalId) clearInterval(intervalId);
+    if (!intervalId) return;
+    clearInterval(intervalId);
+    intervalId = null;
   };
 
   let drawHorizon = () => {
+    horizon.sx = horizon.sx >= spriteWidth ? 0 : horizon.sx + gameSpeed;
+
     ctx.drawImage(
       sprite,
       horizon.sx,
@@ -152,23 +154,23 @@ const Dino = (() => {
       80
     );
 
-    // To loop the horizon
-    if (spriteWidth - horizon.sx <= canvasWidth) {
-      let x = spriteWidth - horizon.sx;
-      let width = canvasWidth - x;
+    let x = spriteWidth - horizon.sx;
 
-      ctx.drawImage(
-        sprite,
-        0,
-        horizon.sy,
-        width,
-        horizon.height,
-        x,
-        horizon.y,
-        width,
-        80
-      );
-    }
+    if (x > canvasWidth) return;
+
+    let width = canvasWidth - x;
+
+    ctx.drawImage(
+      sprite,
+      0,
+      horizon.sy,
+      width,
+      horizon.height,
+      x,
+      horizon.y,
+      width,
+      80
+    );
   };
 
   let generateRandomInterval = (): number => {
@@ -186,7 +188,7 @@ const Dino = (() => {
         if (cactus.x === -cactus.width) {
           cactus = null;
         } else {
-          cactus.x = Math.max(cactus.x - obstacle.speed, -cactus.width);
+          cactus.x = Math.max(cactus.x - gameSpeed, -cactus.width);
         }
       } else {
         let prevObstacle =
@@ -277,7 +279,7 @@ const Dino = (() => {
         if (item.x === -sky.width) {
           item = null;
         } else {
-          item.x = Math.max(item.x - obstacle.speed, -sky.width);
+          item.x = Math.max(item.x - gameSpeed, -sky.width);
         }
       } else {
         let prevSky = sky.skies[i === 0 ? sky.skies.length - 1 : i - 1];
@@ -311,9 +313,12 @@ const Dino = (() => {
   };
 
   let drawTrex = () => {
+    let position: TrexPosition =
+      !isStarted || trex.y !== trex.defaultY ? 0 : trex.position === 2 ? 3 : 2;
     let offset = trex.type === "straight" ? 1335 : 1862;
     trex.width = trex.type === "straight" ? 88 : 126;
-    trex.sx = offset + trex.width * trex.position;
+    trex.sx = offset + trex.width * position;
+    trex.position = position;
 
     if (jump) {
       if (
@@ -327,8 +332,8 @@ const Dino = (() => {
 
       trex.y =
         trex.move === "up"
-          ? Math.max(trex.y - trex.speed, 0)
-          : Math.min(trex.y + trex.speed, trex.defaultY);
+          ? Math.max(trex.y - gameSpeed, 0)
+          : Math.min(trex.y + gameSpeed, trex.defaultY);
 
       if (trex.y === trex.defaultY) {
         jump = false;
