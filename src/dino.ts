@@ -124,8 +124,8 @@ const Dino = (() => {
     clearCanvas();
     drawHorizon();
     drawSky();
-    drawTrex();
     drawObstacle();
+    drawTrex();
     checkCollision();
   };
 
@@ -232,15 +232,56 @@ const Dino = (() => {
     }
   };
 
+  const collision = (
+    rect1: {
+      right: number;
+      top: number;
+      bottom: number;
+      left: number;
+    },
+    rect2: {
+      right: number;
+      top: number;
+      bottom: number;
+      left: number;
+    }
+  ) => {
+    return (
+      rect1.left < rect2.right &&
+      rect1.right > rect2.left &&
+      rect1.top < rect2.bottom &&
+      rect1.bottom > rect2.top
+    );
+  };
+
   let checkCollision = () => {
+    let { top, left } = canvas.getBoundingClientRect();
+
     let isCollision = obstacle.cactuses.some((cactus) => {
       if (!cactus) return;
-      return cactus.x >= trex.x;
+
+      let cactusRect = {
+        top: top + cactus.y,
+        left: left + cactus.x,
+        bottom: top + cactus.y + obstacle.height,
+        right: left + cactus.x + cactus.width,
+      };
+
+      let trexRect = {
+        top: top + trex.y,
+        left: left + trex.x,
+        bottom: top + trex.y + trex.size,
+        right: left + trex.x + trex.size,
+      };
+
+      return collision(trexRect, cactusRect);
     });
+
     if (!isCollision) return;
-    // drawGameOver();
-    // drawRestart();
-    // stop();
+
+    drawGameOver();
+    drawRestart();
+    stop();
   };
 
   let drawGameOver = () => {
@@ -394,7 +435,7 @@ const Dino = (() => {
 
     container.append(canvas);
     window.addEventListener("keydown", handleKeyDown);
-    document.body.append(sprite);
+    // document.body.append(sprite);
     rootNode.append(container);
   };
 
