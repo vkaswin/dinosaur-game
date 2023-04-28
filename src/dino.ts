@@ -11,11 +11,11 @@ import type {
 const Dino = (() => {
   let fps = 60;
   let gameSpeed = 6;
+  let score = "0";
   let canvasWidth = 670;
   let canvasHeight = 170;
   let spriteWidth: number;
   let spriteHeight: number;
-  let container: HTMLDivElement;
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
   let intervalId: NodeJS.Timer | null;
@@ -28,14 +28,14 @@ const Dino = (() => {
     let size = 50;
     return {
       size,
-      width: 0,
+      width: 88,
       height: 0,
       x: 20,
       y: canvasHeight - size,
       sx: 0,
       sy: 0,
       position: 0,
-      type: "straight",
+      offset: 1338,
       move: undefined,
       defaultY: canvasHeight - size,
       minY: 50,
@@ -44,7 +44,7 @@ const Dino = (() => {
 
   let sky: Sky = {
     count: 3,
-    speed: 6,
+    speed: 7,
     sx: 160,
     width: 100,
     height: 35,
@@ -73,7 +73,7 @@ const Dino = (() => {
       small: 120,
       large: 100,
     },
-    interval: [250, 275, 300, 325, 350],
+    interval: [250, 300, 350, 400, 450],
     small: [
       {
         sx: 440,
@@ -120,17 +120,26 @@ const Dino = (() => {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   };
 
-  let renderCanvas = () => {
+  let drawScore = () => {
+    let val = +score + (isStarted ? 1 : 0);
+    score = val.toString().padStart(val.toString().length + 3, "0");
+    // scoreCard.innerText = score;
+    ctx.font = "20px Poppins";
+    ctx.fillText(score, canvasWidth - 100, 25);
+  };
+
+  let render = () => {
     clearCanvas();
     drawHorizon();
     drawSky();
     drawObstacle();
     drawTrex();
+    drawScore();
     checkCollision();
   };
 
   let start = () => {
-    intervalId = setInterval(renderCanvas, 1000 / fps);
+    intervalId = setInterval(render, 1000 / fps);
   };
 
   let stop = () => {
@@ -255,23 +264,23 @@ const Dino = (() => {
   };
 
   let checkCollision = () => {
-    let { top, left } = canvas.getBoundingClientRect();
-
     let isCollision = obstacle.cactuses.some((cactus) => {
+      let offset = 20;
+
       if (!cactus) return;
 
       let cactusRect = {
-        top: top + cactus.y,
-        left: left + cactus.x,
-        bottom: top + cactus.y + obstacle.height,
-        right: left + cactus.x + cactus.width,
+        top: cactus.y + offset,
+        left: cactus.x,
+        bottom: cactus.y + 75,
+        right: cactus.x + cactus.width,
       };
 
       let trexRect = {
-        top: top + trex.y,
-        left: left + trex.x,
-        bottom: top + trex.y + trex.size,
-        right: left + trex.x + trex.size,
+        top: trex.y,
+        left: trex.x + offset,
+        bottom: trex.y + trex.size,
+        right: trex.x + trex.size - offset,
       };
 
       return collision(trexRect, cactusRect);
@@ -282,6 +291,21 @@ const Dino = (() => {
     drawGameOver();
     drawRestart();
     stop();
+  };
+
+  let restart = () => {
+    score = "0";
+    sky.skies = [];
+    obstacle.cactuses = [];
+    trex = {
+      ...trex,
+      y: trex.defaultY,
+      position: 0,
+      move: undefined,
+      time: undefined,
+    };
+    render();
+    start();
   };
 
   let drawGameOver = () => {
@@ -301,6 +325,8 @@ const Dino = (() => {
       width - 100,
       height - 10
     );
+
+    canvas.addEventListener("click", restart, { once: true });
   };
 
   let drawRestart = () => {
@@ -354,11 +380,21 @@ const Dino = (() => {
   };
 
   let drawTrex = () => {
-    let position: TrexPosition =
-      !isStarted || trex.y !== trex.defaultY ? 0 : trex.position === 2 ? 3 : 2;
-    let offset = trex.type === "straight" ? 1335 : 1862;
-    trex.width = trex.type === "straight" ? 88 : 126;
-    trex.sx = offset + trex.width * position;
+    let currentTime = Date.now();
+    let position: TrexPosition = trex.position;
+
+    if (isStarted && !trex.position) trex.position = 2;
+
+    if (!trex.time) trex.time = currentTime;
+
+    if (trex.y !== trex.defaultY) {
+      position = 0;
+    } else if (currentTime - trex.time >= 100) {
+      trex.time = currentTime;
+      position = trex.position === 2 ? 3 : 2;
+    }
+
+    trex.sx = trex.offset + trex.width * position;
     trex.position = position;
 
     if (jump) {
@@ -396,30 +432,18 @@ const Dino = (() => {
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
-    isKeyUp = false;
-    if (isStarted) {
+    if (event.code === "Space" || event.code === "ArrowUp") {
+      isKeyUp = false;
+      jump = true;
       window.addEventListener("keyup", () => (isKeyUp = true), { once: true });
-    }
-    switch (event.code) {
-      case "Space":
-      case "ArrowUp":
-        jump = true;
-        if (isStarted) return;
-        isStarted = true;
-        start();
-        break;
-      case "ArrowDown":
-        break;
-
-      default:
-        return;
+      if (isStarted) return;
+      isStarted = true;
+      start();
     }
   };
 
-  let render = <T extends Element>(rootNode: T) => {
-    container = document.createElement("div");
-    container.classList.add("container");
-    canvas = document.createElement("canvas");
+  let init = () => {
+    canvas = document.querySelector("canvas") as HTMLCanvasElement;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     let context = canvas.getContext("2d");
@@ -430,17 +454,14 @@ const Dino = (() => {
       spriteWidth = sprite.width;
       spriteHeight = sprite.height;
       trex.height = spriteHeight - 30;
-      renderCanvas();
+      render();
     };
 
-    container.append(canvas);
     window.addEventListener("keydown", handleKeyDown);
-    // document.body.append(sprite);
-    rootNode.append(container);
   };
 
   return {
-    render,
+    init,
   };
 })();
 

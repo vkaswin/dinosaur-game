@@ -7,9 +7,9 @@ export interface Trex {
   sy: number;
   defaultY: number;
   size: number;
-
+  time?: number;
   minY: number;
-  type: "straight" | "bend";
+  offset: number;
   position: TrexPosition;
   move?: "up" | "down";
 }
